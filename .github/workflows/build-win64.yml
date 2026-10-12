@@ -1,0 +1,64 @@
+name: Build 17TESS Vocal Sauce V0.5 Windows x64
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Compile VST3 Windows x64
+    runs-on: windows-2022
+    timeout-minutes: 60
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v4
+
+      - name: Locate project automatically
+        shell: pwsh
+        run: |
+          $all = @(Get-ChildItem -Path . -Filter 'CMakeLists.txt' -File -Recurse |
+              Where-Object { $_.FullName -notmatch '[\\/]build[\\/]|[\\/]_deps[\\/]' })
+          $project = $all | Where-Object { $_.FullName -match 'V05_RESPONSIVE' } | Select-Object -First 1
+          if ($null -eq $project) { $project = $all | Select-Object -First 1 }
+          if ($null -eq $project) { throw 'CMakeLists.txt not found. Upload all extracted project files.' }
+          $dir = $project.Directory.FullName
+          if (-not (Test-Path (Join-Path $dir 'source/PluginEditor.cpp'))) { throw 'source files are missing' }
+          if (-not (Test-Path (Join-Path $dir 'assets/reference_background.png'))) { throw 'pixel design PNG is missing' }
+          "SAUCE_SRC=$dir" >> $env:GITHUB_ENV
+          Write-Host "Source directory: $dir"
+
+      - name: Configure JUCE CMake x64
+        shell: pwsh
+        run: |
+          cmake -S "$env:SAUCE_SRC" -B build -G 'Visual Studio 17 2022' -A x64
+          if ($LASTEXITCODE -ne 0) { throw 'CMake configuration failed' }
+
+      - name: Compile VST3 Release
+        shell: pwsh
+        run: |
+          cmake --build build --config Release --target VocalSauce_VST3 --parallel 4
+          if ($LASTEXITCODE -ne 0) { throw 'VST3 compilation failed' }
+
+      - name: Verify and zip Windows VST3
+        shell: pwsh
+        run: |
+          $bundle = Get-ChildItem -Path build -Directory -Recurse -Filter '17TESS VOCAL SAUCE.vst3' |
+              Where-Object { $_.FullName -match 'Release' } | Select-Object -First 1
+          if ($null -eq $bundle) { throw 'VST3 bundle folder not found' }
+          $dll = Get-ChildItem -Path (Join-Path $bundle.FullName 'Contents/x86_64-win') -File -Filter '*.vst3' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if ($null -eq $dll) { throw 'Windows x64 VST3 binary not found' }
+          New-Item -ItemType Directory -Path 'package' -Force | Out-Null
+          Copy-Item -LiteralPath $bundle.FullName -Destination 'package' -Recurse -Force
+          Compress-Archive -LiteralPath 'package/17TESS VOCAL SAUCE.vst3' -DestinationPath '17TESS_V05_WINDOWS_X64.zip' -Force
+
+      - name: Upload ready-to-install ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: 17TESS-VOCAL-SAUCE-V05-WIN64
+          path: 17TESS_V05_WINDOWS_X64.zip
+          if-no-files-found: error
+          retention-days: 30
