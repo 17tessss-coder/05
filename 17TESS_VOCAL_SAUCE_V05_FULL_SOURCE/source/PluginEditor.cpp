@@ -16,7 +16,7 @@ const auto stone = juce::Colour::fromRGB(100,100,100);
 const auto dark = juce::Colour::fromRGB(29,29,29);
 const std::array<const char*,9> mainNames{{"SATURATION","DISTORTION","AIR","PUNCH","WET","DE-ESS","COLOR EQ","CHORUS","COMPRESSOR"}};
 struct Spec { int owner; const char* id; const char* name; };
-const std::array<Spec,29> specs{{
+const std::array<Spec,30> specs{{
   {0,"sat_drive","DRIVE"}, {0,"sat_tone","TONE"}, {0,"sat_output","OUTPUT"},
   {1,"dist_drive","DRIVE"}, {1,"dist_hp","LOW CUT"}, {1,"dist_lp","HIGH CUT"}, {1,"dist_output","OUTPUT"},
   {2,"air_freq","FREQUENCY"}, {2,"air_boost","BOOST"},

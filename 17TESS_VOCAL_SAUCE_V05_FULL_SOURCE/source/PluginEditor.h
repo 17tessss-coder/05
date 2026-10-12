@@ -63,7 +63,7 @@ private:
     std::array<juce::Slider,6> eqKnobs;
     HotspotButton hpToggle, lpToggle;
     std::array<std::unique_ptr<Attachment>,6> eqAttachments;
-    std::array<Detail,29> details;
+    std::array<Detail,30> details;
     HotspotButton eqExpand, detailClose, saveButton, loadButton;
     std::unique_ptr<juce::FileChooser> chooser;
     int expanded=-1; // 0-8 effects, 9 EQ, -1 compressor card/default
